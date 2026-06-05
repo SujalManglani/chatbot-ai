@@ -5,8 +5,8 @@ import * as THREE from "three";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 
 const TEXTURE_PATHS = {
-  body: "/public/textures/DEA_PC_DEADPOOL_Wade_Wilson_Deadpool_Default_Body_D.png",
-  acc: "/public/textures/DEA_PC_DEADPOOL_Wade_Wilson_Deadpool_Default_Acc_D.png"
+  body: "/textures/DEA_PC_DEADPOOL_Wade_Wilson_Deadpool_Default_Body_D.png",
+  acc: "/textures/DEA_PC_DEADPOOL_Wade_Wilson_Deadpool_Default_Acc_D.png"
 };
 
 function DeadpoolModel({ direction = 1, animation = "walk" }) {
