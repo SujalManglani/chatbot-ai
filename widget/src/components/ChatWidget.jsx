@@ -34,6 +34,8 @@ export default function ChatWidget() {
   const reactionTimeoutRef = useRef(null);
   const openingRef = useRef(false);
 
+const API_URL = "https://chatbot-ai-gbqr.onrender.com";
+
   const [messages, setMessages] = useState([
     {
       bot: "👋 Hey! I'm Deadpool AI."
@@ -295,7 +297,7 @@ export default function ChatWidget() {
       setLoading(true);
 
       const res = await axios.post(
-        "http://127.0.0.1:8000/chat",
+  `${API_URL}/chat`,
         {
           message: userMessage
         }
