@@ -1,12 +1,25 @@
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 from tavily import TavilyClient
 
-load_dotenv()
+from app.prompts.system_prompt import DEADPOOL_SYSTEM_PROMPT
+
+
+BASE_DIR = Path(__file__).resolve().parents[2]
+ENV_PATH = BASE_DIR / ".env"
+
+load_dotenv(dotenv_path=ENV_PATH, override=True)
 
 groq_api_key = os.getenv("GROQ_API_KEY")
 tavily_api_key = os.getenv("TAVILY_API_KEY")
+
+print("ENV PATH:", ENV_PATH)
+print("GROQ KEY EXISTS:", bool(groq_api_key))
+print("GROQ KEY START:", groq_api_key[:4] if groq_api_key else "None")
+print("GROQ KEY LENGTH:", len(groq_api_key) if groq_api_key else 0)
 
 client = AsyncOpenAI(
     api_key=groq_api_key,
@@ -73,6 +86,10 @@ def build_search_query(message: str) -> str:
 
 
 def search_web(message: str) -> str:
+    if not tavily_api_key:
+        print("SEARCH SKIPPED: Tavily key missing")
+        return ""
+
     try:
         query = build_search_query(message)
 
@@ -110,29 +127,13 @@ def search_web(message: str) -> str:
 
 async def ask_ai(message: str):
     try:
+        if not groq_api_key:
+            return "ERROR: GROQ_API_KEY is missing. Check your .env file or Render environment variables."
+
         live_context = ""
 
         if needs_live_search(message):
             live_context = search_web(message)
-
-        system_prompt = """
-You are Deadpool AI.
-
-Be helpful, funny, and slightly sarcastic, but do not be offensive.
-Keep answers short and clear.
-
-Use live search results internally when they are provided.
-
-Never mention:
-- live search
-- search results
-- knowledge cutoff
-- training data
-
-If live context clearly answers the question, use it.
-If live context does not clearly answer the question, say you could not verify it.
-Never guess current facts from incomplete context.
-"""
 
         if live_context:
             user_prompt = f"""
@@ -149,18 +150,18 @@ Do not mention the context or sources unless the user asks.
             user_prompt = message
 
         response = await client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-8b-instant",
             messages=[
                 {
                     "role": "system",
-                    "content": system_prompt
+                    "content": DEADPOOL_SYSTEM_PROMPT
                 },
                 {
                     "role": "user",
                     "content": user_prompt
                 }
             ],
-            temperature=0.4
+            temperature=0.75
         )
 
         return response.choices[0].message.content

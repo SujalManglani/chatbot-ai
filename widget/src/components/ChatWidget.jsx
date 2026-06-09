@@ -6,7 +6,7 @@ import {
 
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, Send } from "lucide-react";
+import { X, Send, Mic } from "lucide-react";
 import Deadpool3D from "./Deadpool3D";
 
 export default function ChatWidget() {
@@ -18,6 +18,7 @@ export default function ChatWidget() {
   const [animation, setAnimation] = useState("walk");
   const [reactionVisible, setReactionVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isListening, setIsListening] = useState(false);
 
   const [chatPosition, setChatPosition] = useState({
     x: window.innerWidth - 420,
@@ -33,8 +34,9 @@ export default function ChatWidget() {
   const animationTimeoutRef = useRef(null);
   const reactionTimeoutRef = useRef(null);
   const openingRef = useRef(false);
+  const recognitionRef = useRef(null);
 
-const API_URL = "https://chatbot-ai-gbqr.onrender.com";
+  const API_URL = "https://chatbot-ai-gbqr.onrender.com";
 
   const [messages, setMessages] = useState([
     {
@@ -72,6 +74,79 @@ const API_URL = "https://chatbot-ai-gbqr.onrender.com";
       behavior: "smooth"
     });
   }, [messages]);
+
+  const startListening = () => {
+    const SpeechRecognition =
+      window.SpeechRecognition ||
+      window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Voice input is not supported in this browser. Try Chrome.");
+      return;
+    }
+
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+
+    const recognition = new SpeechRecognition();
+
+    recognition.lang = "en-US";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      setSpeech("Listening...");
+      setReactionVisible(true);
+      setAnimation("idle");
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setMessage(transcript);
+      setSpeech("Got it. Hit send, champ.");
+      setReactionVisible(true);
+    };
+
+    recognition.onerror = (event) => {
+      console.error("VOICE ERROR:", event.error);
+      setSpeech("Mic betrayed us. Classic.");
+      setReactionVisible(true);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+
+      setTimeout(() => {
+        if (!openRef.current) {
+          setReactionVisible(false);
+        }
+      }, 1800);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
+
+  const speakReply = (text) => {
+  if (!("speechSynthesis" in window)) return;
+
+  // Stop any current speech
+  window.speechSynthesis.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(text);
+
+  utterance.lang = "en-US";
+
+  // Slightly faster and deeper for Deadpool vibe
+  utterance.rate = 1.08;
+  utterance.pitch = 0.85;
+  utterance.volume = 1;
+
+  window.speechSynthesis.speak(utterance);
+};
 
   const moveDeadpoolOutsideChat = (chatX) => {
     if (!deadpoolRef.current) return;
@@ -277,63 +352,70 @@ const API_URL = "https://chatbot-ai-gbqr.onrender.com";
     }
   };
 
-  const sendMessage = async () => {
-    if (!message.trim()) return;
+const sendMessage = async () => {
+  if (!message.trim()) return;
 
-    const userMessage = message;
+  const userMessage = message;
+
+  setMessages((prev) => [
+    ...prev,
+    {
+      user: userMessage
+    }
+  ]);
+
+  setMessage("");
+  setSpeech("Thinking...");
+  setAnimation("idle");
+
+  try {
+    setLoading(true);
+
+    const res = await axios.post(
+      `${API_URL}/chat`,
+      {
+        message: userMessage
+      }
+    );
+
+    const botReply =
+      res?.data?.reply || "No reply came back. Dramatic silence.";
 
     setMessages((prev) => [
       ...prev,
       {
-        user: userMessage
+        bot: botReply
       }
     ]);
 
-    setMessage("");
-    setSpeech("Thinking...");
-    setAnimation("idle");
+    speakReply(botReply);
 
-    try {
-      setLoading(true);
+    showReaction(
+      "clap",
+      "Boom. Nailed it.",
+      3600
+    );
+  } catch (err) {
+    console.error(err);
 
-      const res = await axios.post(
-  `${API_URL}/chat`,
-        {
-          message: userMessage
-        }
-      );
+    setMessages((prev) => [
+      ...prev,
+      {
+        bot: "⚠️ Connection error."
+      }
+    ]);
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          bot: res.data.reply
-        }
-      ]);
+    speakReply("Connection error. Something broke. Classic.");
 
-      showReaction(
-        "clap",
-        "Boom. Nailed it.",
-        3600
-      );
-    } catch (err) {
-      console.error(err);
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          bot: "⚠️ Connection error."
-        }
-      ]);
-
-      showReaction(
-        "laugh",
-        "Something broke. Classic.",
-        3400
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+    showReaction(
+      "laugh",
+      "Something broke. Classic.",
+      3400
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen overflow-hidden">
@@ -539,7 +621,11 @@ const API_URL = "https://chatbot-ai-gbqr.onrender.com";
               <input
                 type="text"
                 value={message}
-                placeholder="Talk to Deadpool..."
+                placeholder={
+                  isListening
+                    ? "Listening..."
+                    : "Talk to Deadpool..."
+                }
                 onChange={(e) =>
                   setMessage(e.target.value)
                 }
@@ -550,6 +636,28 @@ const API_URL = "https://chatbot-ai-gbqr.onrender.com";
                 }}
                 className="flex-1 min-w-0 bg-zinc-900 text-white placeholder-gray-400 border border-red-500/10 rounded-2xl px-4 py-3 outline-none text-base"
               />
+
+              <button
+                onClick={startListening}
+                className={`
+                  w-12
+                  h-12
+                  rounded-2xl
+                  flex
+                  items-center
+                  justify-center
+                  text-white
+                  shrink-0
+                  ${
+                    isListening
+                      ? "bg-green-600 animate-pulse"
+                      : "bg-zinc-800 hover:bg-zinc-700"
+                  }
+                `}
+                title="Voice input"
+              >
+                <Mic size={18} />
+              </button>
 
               <button
                 onClick={sendMessage}
