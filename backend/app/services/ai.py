@@ -16,11 +16,6 @@ load_dotenv(dotenv_path=ENV_PATH, override=True)
 groq_api_key = os.getenv("GROQ_API_KEY")
 tavily_api_key = os.getenv("TAVILY_API_KEY")
 
-print("ENV PATH:", ENV_PATH)
-print("GROQ KEY EXISTS:", bool(groq_api_key))
-print("GROQ KEY START:", groq_api_key[:4] if groq_api_key else "None")
-print("GROQ KEY LENGTH:", len(groq_api_key) if groq_api_key else 0)
-
 client = AsyncOpenAI(
     api_key=groq_api_key,
     base_url="https://api.groq.com/openai/v1"
@@ -29,31 +24,6 @@ client = AsyncOpenAI(
 tavily = TavilyClient(
     api_key=tavily_api_key
 )
-
-
-def needs_live_search(message: str) -> bool:
-    text = message.lower()
-
-    keywords = [
-        "current",
-        "latest",
-        "today",
-        "now",
-        "news",
-        "president",
-        "prime minister",
-        "weather",
-        "stock",
-        "score",
-        "price",
-        "recent",
-        "who is",
-        "what is happening",
-        "2025",
-        "2026"
-    ]
-
-    return any(keyword in text for keyword in keywords)
 
 
 def build_search_query(message: str) -> str:
@@ -87,7 +57,7 @@ def build_search_query(message: str) -> str:
 
 def search_web(message: str) -> str:
     if not tavily_api_key:
-        print("SEARCH SKIPPED: Tavily key missing")
+        print("SEARCH SKIPPED: TAVILY_API_KEY missing")
         return ""
 
     try:
@@ -95,8 +65,8 @@ def search_web(message: str) -> str:
 
         result = tavily.search(
             query=query,
-            search_depth="advanced",
-            max_results=8,
+            search_depth="basic",
+            max_results=4,
             include_answer=True
         )
 
@@ -105,9 +75,7 @@ def search_web(message: str) -> str:
         sources = []
 
         if answer:
-            sources.append(
-                f"Search Answer: {answer}"
-            )
+            sources.append(f"Search Answer: {answer}")
 
         for item in result.get("results", []):
             title = item.get("title", "")
@@ -125,14 +93,17 @@ def search_web(message: str) -> str:
         return ""
 
 
-async def ask_ai(message: str):
+async def ask_ai(
+    message: str,
+    use_search: bool = False
+):
     try:
         if not groq_api_key:
             return "ERROR: GROQ_API_KEY is missing. Check your .env file or Render environment variables."
 
         live_context = ""
 
-        if needs_live_search(message):
+        if use_search:
             live_context = search_web(message)
 
         if live_context:
@@ -143,8 +114,9 @@ User question:
 Current verified context:
 {live_context}
 
-Answer the user naturally.
-Do not mention the context or sources unless the user asks.
+Answer naturally in your Deadpool AI style.
+Use the context if it helps.
+Do not mention search results, live search, tools, or sources unless the user asks.
 """
         else:
             user_prompt = message
@@ -161,7 +133,8 @@ Do not mention the context or sources unless the user asks.
                     "content": user_prompt
                 }
             ],
-            temperature=0.75
+            temperature=0.8,
+            max_tokens=220
         )
 
         return response.choices[0].message.content

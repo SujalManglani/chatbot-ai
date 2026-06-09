@@ -6,7 +6,14 @@ import {
 
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, Send, Mic } from "lucide-react";
+import {
+  X,
+  Send,
+  Mic,
+  Search,
+  Volume2,
+  VolumeX
+} from "lucide-react";
 import Deadpool3D from "./Deadpool3D";
 
 export default function ChatWidget() {
@@ -19,6 +26,8 @@ export default function ChatWidget() {
   const [reactionVisible, setReactionVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [voiceMuted, setVoiceMuted] = useState(false);
+  const [useSearch, setUseSearch] = useState(false);
 
   const [chatPosition, setChatPosition] = useState({
     x: window.innerWidth - 420,
@@ -131,22 +140,21 @@ export default function ChatWidget() {
   };
 
   const speakReply = (text) => {
-  if (!("speechSynthesis" in window)) return;
+    if (voiceMuted) return;
+    if (!("speechSynthesis" in window)) return;
+    if (!text || typeof text !== "string") return;
 
-  // Stop any current speech
-  window.speechSynthesis.cancel();
+    window.speechSynthesis.cancel();
 
-  const utterance = new SpeechSynthesisUtterance(text);
+    const utterance = new SpeechSynthesisUtterance(text);
 
-  utterance.lang = "en-US";
+    utterance.lang = "en-US";
+    utterance.rate = 1.08;
+    utterance.pitch = 0.85;
+    utterance.volume = 1;
 
-  // Slightly faster and deeper for Deadpool vibe
-  utterance.rate = 1.08;
-  utterance.pitch = 0.85;
-  utterance.volume = 1;
-
-  window.speechSynthesis.speak(utterance);
-};
+    window.speechSynthesis.speak(utterance);
+  };
 
   const moveDeadpoolOutsideChat = (chatX) => {
     if (!deadpoolRef.current) return;
@@ -342,6 +350,10 @@ export default function ChatWidget() {
     setReactionVisible(false);
     setSpeech("Back to patrol.");
     setAnimation("walk");
+
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
   };
 
   const toggleChat = () => {
@@ -352,70 +364,71 @@ export default function ChatWidget() {
     }
   };
 
-const sendMessage = async () => {
-  if (!message.trim()) return;
+  const sendMessage = async () => {
+    if (!message.trim()) return;
 
-  const userMessage = message;
+    const userMessage = message;
 
-  setMessages((prev) => [
-    ...prev,
-    {
-      user: userMessage
+    setMessages((prev) => [
+      ...prev,
+      {
+        user: userMessage
+      }
+    ]);
+
+    setMessage("");
+    setSpeech(useSearch ? "Searching the chaos..." : "Thinking...");
+    setAnimation("idle");
+
+    try {
+      setLoading(true);
+
+      const res = await axios.post(
+        `${API_URL}/chat`,
+        {
+          message: userMessage,
+          useSearch: useSearch
+        }
+      );
+
+      const botReply =
+        res?.data?.reply || "No reply came back. Dramatic silence.";
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          bot: botReply
+        }
+      ]);
+
+      speakReply(botReply);
+
+      showReaction(
+        "clap",
+        useSearch ? "Found it. Obviously." : "Boom. Nailed it.",
+        3600
+      );
+    } catch (err) {
+      console.error(err);
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          bot: "⚠️ Connection error."
+        }
+      ]);
+
+      speakReply("Connection error. Something broke. Classic.");
+
+      showReaction(
+        "laugh",
+        "Something broke. Classic.",
+        3400
+      );
+    } finally {
+      setLoading(false);
     }
-  ]);
-
-  setMessage("");
-  setSpeech("Thinking...");
-  setAnimation("idle");
-
-  try {
-    setLoading(true);
-
-    const res = await axios.post(
-      `${API_URL}/chat`,
-      {
-        message: userMessage
-      }
-    );
-
-    const botReply =
-      res?.data?.reply || "No reply came back. Dramatic silence.";
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        bot: botReply
-      }
-    ]);
-
-    speakReply(botReply);
-
-    showReaction(
-      "clap",
-      "Boom. Nailed it.",
-      3600
-    );
-  } catch (err) {
-    console.error(err);
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        bot: "⚠️ Connection error."
-      }
-    ]);
-
-    speakReply("Connection error. Something broke. Classic.");
-
-    showReaction(
-      "laugh",
-      "Something broke. Classic.",
-      3400
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div className="min-h-screen overflow-hidden">
@@ -577,7 +590,14 @@ const sendMessage = async () => {
             "
           >
             <div className="bg-gradient-to-r from-red-700 via-red-600 to-black p-4 text-white font-bold text-lg flex items-center justify-between">
-              <span>Deadpool AI 🗡️</span>
+              <span>
+                Deadpool AI 🗡️
+                {useSearch && (
+                  <span className="ml-2 text-xs font-normal text-blue-200">
+                    Live Search ON
+                  </span>
+                )}
+              </span>
 
               <button
                 onClick={toggleChat}
@@ -610,7 +630,9 @@ const sendMessage = async () => {
 
               {loading && (
                 <div className="text-red-300 text-sm animate-pulse">
-                  Deadpool is typing...
+                  {useSearch
+                    ? "Deadpool is searching..."
+                    : "Deadpool is typing..."}
                 </div>
               )}
 
@@ -624,7 +646,9 @@ const sendMessage = async () => {
                 placeholder={
                   isListening
                     ? "Listening..."
-                    : "Talk to Deadpool..."
+                    : useSearch
+                      ? "Ask with live search..."
+                      : "Talk to Deadpool..."
                 }
                 onChange={(e) =>
                   setMessage(e.target.value)
@@ -657,6 +681,62 @@ const sendMessage = async () => {
                 title="Voice input"
               >
                 <Mic size={18} />
+              </button>
+
+              <button
+                onClick={() =>
+                  setUseSearch(!useSearch)
+                }
+                className={`
+                  w-12
+                  h-12
+                  rounded-2xl
+                  flex
+                  items-center
+                  justify-center
+                  text-white
+                  shrink-0
+                  ${
+                    useSearch
+                      ? "bg-blue-600 animate-pulse"
+                      : "bg-zinc-800 hover:bg-zinc-700"
+                  }
+                `}
+                title={useSearch ? "Live search on" : "Live search off"}
+              >
+                <Search size={18} />
+              </button>
+
+              <button
+                onClick={() => {
+                  setVoiceMuted(!voiceMuted);
+
+                  if (!voiceMuted && "speechSynthesis" in window) {
+                    window.speechSynthesis.cancel();
+                  }
+                }}
+                className={`
+                  w-12
+                  h-12
+                  rounded-2xl
+                  flex
+                  items-center
+                  justify-center
+                  text-white
+                  shrink-0
+                  ${
+                    voiceMuted
+                      ? "bg-zinc-700"
+                      : "bg-red-700 hover:bg-red-600"
+                  }
+                `}
+                title={voiceMuted ? "Voice muted" : "Voice on"}
+              >
+                {voiceMuted ? (
+                  <VolumeX size={18} />
+                ) : (
+                  <Volume2 size={18} />
+                )}
               </button>
 
               <button
