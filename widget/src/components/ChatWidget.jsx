@@ -44,12 +44,13 @@ export default function ChatWidget() {
   const reactionTimeoutRef = useRef(null);
   const openingRef = useRef(false);
   const recognitionRef = useRef(null);
+  const openCountRef = useRef(0);
 
   const API_URL = "https://chatbot-ai-gbqr.onrender.com";
 
   const [messages, setMessages] = useState([
     {
-      bot: "👋 Hey! I'm Deadpool AI."
+      bot: "Hey, Magnificent COCKSUCKER!"
     }
   ]);
 
@@ -114,7 +115,7 @@ export default function ChatWidget() {
     recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
       setMessage(transcript);
-      setSpeech("Got it. Hit send, champ.");
+      setSpeech("Got it. Hit send, MOTHER FUCKER.");
       setReactionVisible(true);
     };
 
@@ -333,7 +334,26 @@ export default function ChatWidget() {
       moveDeadpoolOutsideChat(newChatPosition.x);
     }
 
-    setSpeech("Hey. You called?");
+    openCountRef.current += 1;
+
+const openQuotes =
+  openCountRef.current === 1
+    ? [
+        "Hey. Do you charge for BLOWJOBS?",
+        "Let me help you to fix this shit, JACKASS.",
+        "Welcome. Not you ."
+      ]
+    : [
+        "What now?",
+        "Please dont be same the fucker again.",
+        "Back already? You are a disappointment after LGBTQ FUCKERS.",
+        "WTF is wrong with you?.",
+        "You Dumb Fucker, can't you do it yourself?"
+      ];
+
+setSpeech(
+  openQuotes[Math.floor(Math.random() * openQuotes.length)]
+);
     setReactionVisible(true);
     setAnimation("wave");
 
@@ -431,7 +451,10 @@ export default function ChatWidget() {
   };
 
   return (
-    <div className="min-h-screen overflow-hidden">
+    <div
+  className="min-h-screen overflow-hidden select-none bg-black"
+  onContextMenu={(e) => e.preventDefault()}
+>
       <div className="fixed inset-0 bg-gradient-to-br from-black via-zinc-900 to-red-950" />
 
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_center,rgba(255,0,0,0.18),transparent_70%)]" />
@@ -443,7 +466,7 @@ export default function ChatWidget() {
           bottom-0
           left-0
           will-change-transform
-          z-40
+          z-[9998]
         `}
       >
         <div
@@ -506,25 +529,26 @@ export default function ChatWidget() {
                 exit={{
                   opacity: 0
                 }}
-                className="
-                  absolute
-                  -top-2
-                  sm:-top-1
-                  left-1/2
-                  -translate-x-1/2
-                  bg-white
-                  text-black
-                  px-3
-                  sm:px-4
-                  py-2
-                  rounded-2xl
-                  text-xs
-                  sm:text-sm
-                  font-medium
-                  shadow-xl
-                  whitespace-nowrap
-                  z-30
-                "
+className="
+  absolute
+  -top-4
+  sm:-top-3
+  left-1/2
+  -translate-x-1/2
+  bg-zinc-950
+  text-white
+  border
+  border-red-500/30
+  px-4
+  py-2
+  rounded-2xl
+  text-xs
+  sm:text-sm
+  font-bold
+  shadow-[0_0_25px_rgba(239,68,68,0.35)]
+  whitespace-nowrap
+  z-30
+"
               >
                 {speech}
               </motion.div>
@@ -589,15 +613,36 @@ export default function ChatWidget() {
               z-50
             "
           >
-            <div className="bg-gradient-to-r from-red-700 via-red-600 to-black p-4 text-white font-bold text-lg flex items-center justify-between">
-              <span>
-                Deadpool AI 🗡️
-                {useSearch && (
-                  <span className="ml-2 text-xs font-normal text-blue-200">
-                    Live Search ON
+            <div className="p-4 border-b border-red-500/10 flex items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-black">
+                     
                   </span>
-                )}
-              </span>
+
+                  {useSearch && (
+                    <span className="ml-2 text-xs font-normal text-blue-200">
+                      Live Search ON
+                    </span>
+                  )}
+                </div>
+                <div
+                  className="
+                    text-[10px]
+                    uppercase
+                    tracking-widest
+                    bg-red-700/30
+                    text-red-200
+                    px-2
+                    py-1
+                    rounded-full
+                    inline-block
+                    mt-1
+                  "
+                >
+                  Maximum Effort
+                </div>
+              </div>
 
               <button
                 onClick={toggleChat}
@@ -612,34 +657,81 @@ export default function ChatWidget() {
                 <div key={i}>
                   {m.user && (
                     <div className="flex justify-end">
-                      <div className="bg-gradient-to-r from-red-600 to-red-500 text-white px-4 py-3 rounded-2xl max-w-[80%]">
+                      <div
+  className="
+    bg-gradient-to-r
+    from-red-600
+    to-red-500
+    text-white
+    px-4
+    py-3
+    rounded-[20px]
+    rounded-br-md
+    max-w-[80%]
+    shadow-lg
+  "
+>
                         {m.user}
                       </div>
                     </div>
                   )}
 
-                  {m.bot && (
-                    <div className="flex justify-start">
-                      <div className="bg-zinc-900 text-white px-4 py-3 rounded-2xl max-w-[80%] border border-red-500/10">
-                        {m.bot}
-                      </div>
-                    </div>
-                  )}
+                 {m.bot && (
+  <div className="flex items-start gap-2">
+
+    <div
+      className="
+        w-8
+        h-8
+        rounded-full
+        bg-red-700
+        flex
+        items-center
+        justify-center
+        shrink-0
+      "
+    >
+      💀
+    </div>
+
+    <div
+      className="
+        bg-zinc-950
+        text-white
+        px-4
+        py-3
+        rounded-[20px]
+        rounded-bl-md
+        max-w-[80%]
+        border
+        border-red-500/20
+        shadow-lg
+      "
+    >
+      {m.bot}
+    </div>
+
+  </div>
+)}
                 </div>
               ))}
 
               {loading && (
-                <div className="text-red-300 text-sm animate-pulse">
-                  {useSearch
-                    ? "Deadpool is searching..."
-                    : "Deadpool is typing..."}
-                </div>
+                <div className="flex items-center gap-2 text-red-300">
+  <span className="w-2 h-2 rounded-full bg-red-500 animate-bounce" />
+  <span className="w-2 h-2 rounded-full bg-red-500 animate-bounce [animation-delay:150ms]" />
+  <span className="w-2 h-2 rounded-full bg-red-500 animate-bounce [animation-delay:300ms]" />
+
+  <span className="ml-2">
+    Deadpool is cooking...
+  </span>
+</div>
               )}
 
               <div ref={bottomRef} />
             </div>
 
-            <div className="p-3 border-t border-red-500/10 flex gap-2 bg-black/40 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <div className="p-3 border-t border-red-500/20 flex gap-2 bg-black/80 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
               <input
                 type="text"
                 value={message}

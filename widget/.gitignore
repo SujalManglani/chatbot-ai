@@ -43,3 +43,6 @@ venv/
 *.njsproj
 *.sln
 *.sw?
+
+coverage/
+*.coverage

@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -24,6 +25,39 @@ client = AsyncOpenAI(
 tavily = TavilyClient(
     api_key=tavily_api_key
 )
+
+
+BANNED_REPLACEMENTS = {
+    "champ": "walking incident report",
+    "genius": "overconfident catastrophe",
+    "keyboard warrior": "caffeine-powered liability",
+    "boss": "disaster consultant",
+    "buddy": "barely supervised adult",
+    "pal": "consequence collector",
+    "bro": "chaos enthusiast",
+    "friend": "freelance complication",
+    "chief": "customer support nightmare",
+    "king": "budget supervillain",
+    "hero": "ambitious trainwreck",
+    "warrior": "walking patch note",
+}
+
+
+def sanitize_deadpool_reply(reply: str) -> str:
+    if not reply:
+        return reply
+
+    cleaned = reply
+
+    for banned, replacement in BANNED_REPLACEMENTS.items():
+        pattern = re.compile(
+            rf"\b{re.escape(banned)}\b",
+            re.IGNORECASE
+        )
+
+        cleaned = pattern.sub(replacement, cleaned)
+
+    return cleaned
 
 
 def build_search_query(message: str) -> str:
@@ -133,11 +167,13 @@ Do not mention search results, live search, tools, or sources unless the user as
                     "content": user_prompt
                 }
             ],
-            temperature=0.8,
-            max_tokens=220
+            temperature=0.95,
+            max_tokens=260
         )
 
-        return response.choices[0].message.content
+        reply = response.choices[0].message.content
+
+        return sanitize_deadpool_reply(reply)
 
     except Exception as e:
         print("REAL ERROR:", str(e))
