@@ -452,7 +452,7 @@ setSpeech(
 
   return (
     <div
-  className="min-h-screen overflow-hidden select-none bg-black"
+  className="min-h-screen overflow-x-hidden bg-black"
   onContextMenu={(e) => e.preventDefault()}
 >
       <div className="fixed inset-0 bg-gradient-to-br from-black via-zinc-900 to-red-950" />
@@ -480,14 +480,15 @@ setSpeech(
         >
           <button
             onClick={toggleChat}
-            className="
+            className={`
               absolute
               inset-0
               bg-transparent
               border-none
               cursor-pointer
               z-20
-            "
+              ${open ? "pointer-events-none" : ""}
+            `}
             aria-label="Open chat"
           />
 
@@ -591,7 +592,7 @@ className="
               left-0
               bottom-0
               w-full
-              h-[75vh]
+              h-[75dvh]
               rounded-t-3xl
               sm:left-auto
               sm:bottom-auto
@@ -610,7 +611,8 @@ className="
               shadow-[0_0_60px_rgba(255,0,0,0.2)]
               flex
               flex-col
-              z-50
+              z-[99999]
+              touch-auto
             "
           >
             <div className="p-4 border-b border-red-500/10 flex items-center justify-between gap-3">
